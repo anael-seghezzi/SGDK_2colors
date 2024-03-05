@@ -19,6 +19,7 @@
 // pal3: 0101010101010101
 
 #include "genesis.h"
+#include "poly.h"
 
 #pragma GCC push_options
 #pragma GCC optimize ("unroll-loops")
@@ -99,7 +100,8 @@ int main(bool hardReset)
 {
     VDP_setScreenWidth256();
     VDP_setPlaneSize(32, 32, TRUE);
-    VDP_setScrollingMode(HSCROLL_PLANE, VSCROLL_PLANE);
+    VDP_clearPlane(BG_A, 0);
+    VDP_clearPlane(BG_B, 0);
 
     SYS_disableInts();
 
@@ -129,28 +131,27 @@ int main(bool hardReset)
     }
     for (u16 i = 1; i < 16; i++) {
         if (i & 4)
-            PAL_setColor(16+i, RGB24_TO_VDPCOLOR(0xFFFFFF));
+            PAL_setColor(16+i, RGB24_TO_VDPCOLOR(0xC0C0C0));
         else
             PAL_setColor(16+i, RGB24_TO_VDPCOLOR(0x0));
     }
     for (u16 i = 1; i < 16; i++) {
         if (i & 2)
-            PAL_setColor(32+i, RGB24_TO_VDPCOLOR(0xFFFFFF));
+            PAL_setColor(32+i, RGB24_TO_VDPCOLOR(0x808080));
         else
             PAL_setColor(32+i, RGB24_TO_VDPCOLOR(0x0));
     }
     for (u16 i = 1; i < 16; i++) {
         if (i & 1)
-            PAL_setColor(48+i, RGB24_TO_VDPCOLOR(0xFFFFFF));
+            PAL_setColor(48+i, RGB24_TO_VDPCOLOR(0x606060));
         else
             PAL_setColor(48+i, RGB24_TO_VDPCOLOR(0x0));
     }
 
-    SYS_enableInts();
+    s16 point[16][4];
 
-    // 256 random points
-    s16 point[256][4];
-    for (u16 i = 0; i < 256; i++) {
+    setRandomSeed(0);
+    for (u16 i = 0; i < 16; i++) {
         point[i][0] = random() & 255;
         point[i][1] = random() & 127;
         point[i][2] = 1 + (random() & 1);
@@ -161,15 +162,15 @@ int main(bool hardReset)
             point[i][3] = -point[i][3];
     }
 
+    SYS_enableInts();
+
     while(TRUE)
     {
         u32 frame_buffer[1024] = {0};
 
-        for (u16 i = 0; i < 256; i++) {
+        // bounce points
+        for (u16 i = 0; i < 16; i++) {
 
-            draw_pixel_faster(frame_buffer, point[i][0], point[i][1]);
-
-            // bounce points
             s16 x = point[i][0] + point[i][2];
             s16 y = point[i][1] + point[i][3];
 
@@ -194,7 +195,25 @@ int main(bool hardReset)
             point[i][1] = y;
         }
 
-        VDP_waitVSync();
+        // triangle 1
+        {
+            Vect2D_s16 v0 = {point[0][0], point[0][1]};
+            Vect2D_s16 v1 = {point[1][0], point[1][1]};
+            Vect2D_s16 v2 = {point[2][0], point[2][1]};
+            triangle(frame_buffer, v0, v1, v2, 0xFFFFFFFF);
+        }
+        // triangle 2
+        {
+            Vect2D_s16 v0 = {point[3][0]/2, point[3][1]/2};
+            Vect2D_s16 v1 = {point[4][0]/2, point[4][1]/2};
+            Vect2D_s16 v2 = {point[5][0]/2, point[5][1]/2};
+            triangle(frame_buffer, v0, v1, v2, 0xF0F0F0F0);
+        }
+
+        for (u16 i = 6; i < 16; i++)
+            draw_pixel_faster(frame_buffer, point[i][0], point[i][1]);
+
+        SYS_doVBlankProcess();
 
         // send frame buffer to vram
         DMA_doDmaFast(DMA_VRAM, frame_buffer, TILE_USERINDEX*32, 2048, 2);
