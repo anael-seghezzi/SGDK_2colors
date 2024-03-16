@@ -32,8 +32,8 @@ inline static void draw_pixel(u32 *dest, u16 x, u16 y)
     u16 v = (y & 31);
     u16 shift = (y / 32) + ((x & 7) * 4);
     u32 value = 0x80000000 >> shift;
-    u16 tile = (((v / 8) * 32) + ((x / 8)) * 8);
-    dest[tile + (v & 7)] |= value;
+    u16 tile = (v / 8) * 256 + (v & 7);
+    dest[tile + (x / 8) * 8] |= value;
 }
 
 
@@ -107,19 +107,19 @@ int main(bool hardReset)
 
 	// tile index
 	{
-		u16 tile_addr[32*8];
-        for (s16 i = 0; i < 32*8; i++)
+		u16 tile_addr[32*4];
+        for (s16 i = 0; i < 32*4; i++)
             tile_addr[i] = TILE_USERINDEX + i + (0 << TILE_ATTR_PALETTE_SFT);
-        DMA_doDmaFast(DMA_VRAM, tile_addr, VDP_getPlaneAddress(BG_B, 0,  6), 32*8, 2);
-        for (s16 i = 0; i < 32*8; i++)
+        DMA_doDmaFast(DMA_VRAM, tile_addr, VDP_getPlaneAddress(BG_B, 0,  6), 32*4, 2);
+        for (s16 i = 0; i < 32*4; i++)
             tile_addr[i] = TILE_USERINDEX + i + (1 << TILE_ATTR_PALETTE_SFT);
-		DMA_doDmaFast(DMA_VRAM, tile_addr, VDP_getPlaneAddress(BG_B, 0, 10), 32*8, 2);
-        for (s16 i = 0; i < 32*8; i++)
+		DMA_doDmaFast(DMA_VRAM, tile_addr, VDP_getPlaneAddress(BG_B, 0, 10), 32*4, 2);
+        for (s16 i = 0; i < 32*4; i++)
             tile_addr[i] = TILE_USERINDEX + i + (2 << TILE_ATTR_PALETTE_SFT);
-        DMA_doDmaFast(DMA_VRAM, tile_addr, VDP_getPlaneAddress(BG_B, 0, 14), 32*8, 2);
-        for (s16 i = 0; i < 32*8; i++)
+        DMA_doDmaFast(DMA_VRAM, tile_addr, VDP_getPlaneAddress(BG_B, 0, 14), 32*4, 2);
+        for (s16 i = 0; i < 32*4; i++)
             tile_addr[i] = TILE_USERINDEX + i + (3 << TILE_ATTR_PALETTE_SFT);
-        DMA_doDmaFast(DMA_VRAM, tile_addr, VDP_getPlaneAddress(BG_B, 0, 18), 32*8, 2);
+        DMA_doDmaFast(DMA_VRAM, tile_addr, VDP_getPlaneAddress(BG_B, 0, 18), 32*4, 2);
 	}
 
     // palette masking
@@ -150,7 +150,7 @@ int main(bool hardReset)
 
     s16 point[16][4];
 
-    setRandomSeed(0);
+    setRandomSeed(2);
     for (u16 i = 0; i < 16; i++) {
         point[i][0] = random() & 255;
         point[i][1] = random() & 127;
