@@ -3,7 +3,6 @@
 
 // instead of 64 pixels in 16 colors each tile is packing 256 pixels in 2 colors
 // the frame is divided in 4 blocs of 32 lines as each tile is reused 4 times (using palette masking)
-// we use the 4 palettes here to demonstrate but we could update just one every 32 lines with an interrupt
 // the bits are interleaved so indexing is not trivial and slow (tables can speed it up)
 
 // bit masking example (in 8 bits):
